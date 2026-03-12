@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "random-respawn",
+	"version": "${version}",
+	"name": "Random Respawn",
+	"description": "Randomizes respawn location for all dead players to spawn together.",
+	"authors": [
+		"Myonpasu"
+	],
+	"contact": {
+		"homepage": "https://github.com/Myonpasu"
+	},
+	"license": "MIT",
+	"icon": "assets/random-respawn/icon.png",
+	"environment": "server",
+	"entrypoints": {
+		"main": [
+			"dev.randomrespawn.RandomRespawn"
+		]
+	},
+	"mixins": [
+		"random-respawn.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*",
+		"c2me": "*"
+	}
+}
