@@ -8,7 +8,7 @@
 		"Myonpasu"
 	],
 	"contact": {
-		"homepage": "https://github.com/Myonpasu"
+		"sources": "https://github.com/Myonpasu/random-respawn"
 	},
 	"license": "MIT",
 	"icon": "assets/random-respawn/icon.png",
