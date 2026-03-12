@@ -60,18 +60,19 @@ public class RandomRespawn implements ModInitializer {
 
 		// When the first player dies, swap in the pending spawn.
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
-			if (!(entity instanceof ServerPlayer)) return;
+			if (!(entity instanceof ServerPlayer player)) return;
 
 			BlockPos spawn = pendingSpawn.getAndSet(null);
 			if (spawn == null) return;
 
-			MinecraftServer server = entity.level().getServer();
+			MinecraftServer server = player.level().getServer();
 
 			ServerLevel overworld = server.overworld();
 			GlobalPos newGlobalSpawn = GlobalPos.of(overworld.dimension(), spawn);
 			overworld.setRespawnData(new RespawnData(newGlobalSpawn, 0, 0));
 
-			LOGGER.info("[Random Respawn]: Pending spawn applied at {} on first death.", spawn);
+			LOGGER.info("[Random Respawn]: Pending spawn applied at {}, {}, {} on first death.",
+					spawn.getX(), spawn.getY(), spawn.getZ());
 		});
 
 		// When the last dead player respawns, pre-generate the next pending spawn.
@@ -85,8 +86,11 @@ public class RandomRespawn implements ModInitializer {
 				if (!player.isAlive()) return;
 			}
 
+			if (!generatingSpawn.compareAndSet(false, true)) return;
+
 			LOGGER.info("[Random Respawn]: All players alive. Pre-generation scheduled in {} seconds.",
 					GENERATION_DELAY_SECONDS);
+
 			CompletableFuture.delayedExecutor(GENERATION_DELAY_SECONDS, TimeUnit.SECONDS)
 					.execute(() -> generateSpawn(server));
 
@@ -95,8 +99,6 @@ public class RandomRespawn implements ModInitializer {
 	}
 
 	private static void generateSpawn(MinecraftServer server) {
-
-		if (!generatingSpawn.compareAndSet(false, true)) return;
 
 		LOGGER.info("[Random Respawn]: Starting spawn generation.");
 
@@ -109,7 +111,8 @@ public class RandomRespawn implements ModInitializer {
                     applySpawnChunkTickets(overworld, spawn);
                     pendingSpawn.set(spawn);
                     generatingSpawn.set(false);
-                    LOGGER.info("[Random Respawn]: Spawn pre-generated and pending at {}.", spawn);
+                    LOGGER.info("[Random Respawn]: Spawn pre-generated and pending at {}, {}, {}.",
+							spawn.getX(), spawn.getY(), spawn.getZ());
                 }))
 				.exceptionally(e -> {
 					LOGGER.error("[Random Respawn]: Spawn generation failed.", e);
@@ -176,8 +179,8 @@ public class RandomRespawn implements ModInitializer {
 
 		List<CompletableFuture<?>> futures = new ArrayList<>();
 
-		for (int dx = -1; dx <= 1; dx++) {
-			for (int dz = -1; dz <= 1; dz++) {
+		for (int dx = -CONFIG.preloadRadius; dx <= CONFIG.preloadRadius; dx++) {
+			for (int dz = -CONFIG.preloadRadius; dz <= CONFIG.preloadRadius; dz++) {
 				futures.add(level.getChunkSource().getChunkFuture(
 						chunkX + dx, chunkZ + dz, ChunkStatus.FULL, true
 				));
@@ -200,8 +203,8 @@ public class RandomRespawn implements ModInitializer {
 		}
 		forcedSpawnChunks.clear();
 
-		for (int dx = -1; dx <= 1; dx++) {
-			for (int dz = -1; dz <= 1; dz++) {
+		for (int dx = -CONFIG.preloadRadius; dx <= CONFIG.preloadRadius; dx++) {
+			for (int dz = -CONFIG.preloadRadius; dz <= CONFIG.preloadRadius; dz++) {
 				int cx = chunkX + dx;
 				int cz = chunkZ + dz;
 				level.setChunkForced(cx, cz, true);

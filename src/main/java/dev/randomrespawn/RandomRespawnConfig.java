@@ -17,16 +17,19 @@ public class RandomRespawnConfig {
             .resolve("randomrespawn.json");
 
     private static final int DEFAULT_RADIUS = 10000;
+    private static final int DEFAULT_PRELOAD_RADIUS = 1;
 
     public int centerX = 0;
     public int centerZ = 0;
     public int radius = DEFAULT_RADIUS;
+    public int preloadRadius = DEFAULT_PRELOAD_RADIUS;
 
     public static RandomRespawnConfig load() {
         if (Files.exists(CONFIG_PATH)) {
             try {
                 RandomRespawnConfig config = GSON.fromJson(Files.readString(CONFIG_PATH), RandomRespawnConfig.class);
                 config.applyDefaults();
+                Files.writeString(CONFIG_PATH, GSON.toJson(config));
                 return config;
             } catch (IOException e) {
                 RandomRespawn.LOGGER.error("[Random Respawn]: Failed to read config file, using defaults.", e);
@@ -46,6 +49,7 @@ public class RandomRespawnConfig {
 
     private void applyDefaults() {
         if (radius <= 0) radius = DEFAULT_RADIUS;
+        if (preloadRadius < 0) preloadRadius = DEFAULT_PRELOAD_RADIUS;
     }
 
 }

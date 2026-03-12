@@ -3,7 +3,7 @@
 	"package": "dev.randomrespawn.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"ExampleMixin"
+		"ServerPlayerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
