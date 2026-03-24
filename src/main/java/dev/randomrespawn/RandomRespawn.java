@@ -47,13 +47,13 @@ public class RandomRespawn implements ModInitializer {
 
 	private static final int GENERATION_DELAY_SECONDS = 10;
 
-	private static RandomRespawnConfig CONFIG;
+	private static final RandomRespawnConfig CONFIG = RandomRespawnConfig.CONFIG;
 
 	@Override
 	public void onInitialize() {
 		LOGGER.info("[Random Respawn]: Mod loaded.");
 
-		CONFIG = RandomRespawnConfig.load();
+		RandomRespawnConfig.load();
 
 		// Pre-generate a pending spawn on server start so it's ready for the first death.
 		ServerLifecycleEvents.SERVER_STARTED.register(RandomRespawn::generateSpawn);
