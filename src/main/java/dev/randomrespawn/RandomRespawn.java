@@ -4,6 +4,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -49,6 +50,8 @@ public class RandomRespawn implements ModInitializer {
 
 	private static final RandomRespawnConfig CONFIG = RandomRespawnConfig.load();
 
+	public static boolean overrideRespawnPositionClear = false;
+
 	@Override
 	public void onInitialize() {
 		LOGGER.info("[Random Respawn]: Mod loaded.");
@@ -56,14 +59,32 @@ public class RandomRespawn implements ModInitializer {
 		// Pre-generate a pending spawn on server start so it's ready for the first death.
 		ServerLifecycleEvents.SERVER_STARTED.register(RandomRespawn::generateSpawn);
 
+		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+			if (CONFIG.disableBedRespawn) {
+
+				RandomRespawn.overrideRespawnPositionClear = true;
+				handler.player.setRespawnPosition(null, false);
+				RandomRespawn.overrideRespawnPositionClear = false;
+
+			}
+		});
+
 		// When the first player dies, swap in the pending spawn.
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
 			if (!(entity instanceof ServerPlayer player)) return;
 
-			BlockPos spawn = pendingSpawn.getAndSet(null);
-			if (spawn == null) return;
+			if (pendingSpawn.get() == null) return;
 
 			MinecraftServer server = player.level().getServer();
+
+			// If any player has a personal respawn set, use the existing global spawn instead.
+			if (!CONFIG.disableBedRespawn) {
+				for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+					if (!p.isAlive() && p.getRespawnConfig() != null) return;
+				}
+			}
+
+			BlockPos spawn = pendingSpawn.getAndSet(null);
 
 			ServerLevel overworld = server.overworld();
 			GlobalPos newGlobalSpawn = GlobalPos.of(overworld.dimension(), spawn);
@@ -84,6 +105,7 @@ public class RandomRespawn implements ModInitializer {
 				if (!player.isAlive()) return;
 			}
 
+			if (pendingSpawn.get() != null) return;
 			if (!generatingSpawn.compareAndSet(false, true)) return;
 
 			LOGGER.info("[Random Respawn]: All players alive. Pre-generation scheduled in {} seconds.",
